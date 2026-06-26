@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Acompanhamento em tempo real do preço do Bitcoin (USD/BRL), variação 24h, Mayer Multiple e taxas da rede.">
+    <meta property="og:title" content="cheap, buy more!">
+    <meta property="og:description" content="Acompanhamento em tempo real do preço do Bitcoin (USD/BRL), variação 24h e Mayer Multiple.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link id="favicon" rel="icon" href="https://cdn.discordapp.com/emojis/816407226524631121.webp">
+    <title>cheap, buy more!</title>
+    <style>
+        :root {
+            --text-muted: #9fb3b3;
+            --green: #4caf50;
+            --red: #f44336;
+            --accent: #f7931a;
+            --card-bg: #0c0f11;
+            --card-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .info-large {
+            font-weight: 100;
+            font-size: 56px;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .info-medium {
+            font-weight: 100;
+            font-size: 48px;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .info-small {
+            font-weight: 100;
+            font-size: 40px;
+            color: white;
+            margin-top: 5px;
+        }
+
+        .info-smaller {
+            font-weight: 100;
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .info-brlsmll {
+            font-weight: 100;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .info-dollar {
+            font-weight: 100;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* ---------- Card de estatísticas (24h + taxas) ---------- */
+        .stats-card {
+            margin: 28px auto 0;
+            max-width: 380px;
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 22px 20px;
+            box-shadow: 0 12px 36px -8px rgba(247, 147, 26, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5);
+            text-align: left;
+        }
+
+        .stats-eyebrow {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .stats-unit {
+            text-transform: none;
+            letter-spacing: normal;
+            opacity: 0.6;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+            gap: 10px;
+        }
+
+        .stat-tile,
+        .fee-tile {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .fee-tile {
+            text-align: center;
+            padding: 10px 6px;
+        }
+
+        .fee-tile--accent {
+            background: rgba(247, 147, 26, 0.12);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+
+        .fee-tile .stat-label {
+            font-size: 10px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 500;
+            color: white;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .fee-tile .stat-value {
+            font-size: 14px;
+        }
+
+        .stat-value--accent {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .stats-divider {
+            height: 1px;
+            background: var(--card-border);
+            margin: 18px 0;
+        }
+
+        .stats-average {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--card-border);
+        }
+
+        .stats-average .stat-label {
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+
+        .stats-average .stat-value {
+            font-size: 22px;
+        }
+
+        .sparkline-wrap {
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
+        .info-source {
+            display: none;
+            font-size: 11px;
+            color: orange;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        .time-row {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .time-zone {
+            white-space: nowrap;
+        }
+
+        .time-zone-label {
+            font-weight: 600;
+            color: var(--accent);
+            margin-right: 4px;
+            font-size: 0.85em;
+        }
+
+        .time-sep {
+            color: var(--text-muted);
+            opacity: 0.4;
+        }
+
+        .price-up {
+            color: var(--green) !important;
+        }
+
+        .price-down {
+            color: var(--red) !important;
+        }
+
+        .field-error {
+            color: var(--red) !important;
+            opacity: 0.7;
+        }
+
+        @keyframes flashUp {
+            0% { color: var(--green); }
+            100% { color: white; }
+        }
+
+        @keyframes flashDown {
+            0% { color: var(--red); }
+            100% { color: white; }
+        }
+
+        .flash-up {
+            animation: flashUp 0.8s ease-out;
+        }
+
+        .flash-down {
+            animation: flashDown 0.8s ease-out;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { text-shadow: none; }
+            50% { text-shadow: 0 0 20px orange; }
+        }
+
+        .alert-pulse {
+            animation: alertPulse 0.6s ease-in-out 3;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            .info-large { font-size: 36px; }
+            .info-medium { font-size: 30px; }
+            .info-small { font-size: 26px; }
+            .info-smaller { font-size: 13px; }
+            .stats-card { padding: 18px 16px; }
+            .stat-value { font-size: 16px; }
+            .fee-tile .stat-value { font-size: 13px; }
+        }
+    </style>
+    <script>
+        const ALERT_THRESHOLD = 50000; // dispara alerta sonoro/visual quando o preço cruza esse valor (em qualquer direção)
+        const BASE_REFRESH = 10000;     // intervalo normal de atualização (ms)
+        const MAX_REFRESH = 60000;      // teto do backoff em caso de erro (ms)
+        const HISTORY_CACHE_HOURS = 12; // por quanto tempo cacheamos a MA200 / histórico de 200 dias
+
+        const alertSound = new Audio('https://www.myinstants.com/media/sounds/tindeck_1.mp3');
+
+        let previousPrice = null;
+        let currentInterval = BASE_REFRESH;
+
+        // ---------- Cache (localStorage com expiração) ----------
+        // Usamos localStorage (em vez de cookies) porque guardamos também os
+        // 200 pontos de preço usados no sparkline, e isso não cabe bem em cookie.
+        function setCache(key, value, hours) {
+            try {
+                const expiry = Date.now() + hours * 60 * 60 * 1000;
+                localStorage.setItem(key, JSON.stringify({ value, expiry }));
+            } catch (e) {
+                console.error('Erro ao salvar cache:', e);
+            }
+        }
+
+        function getCache(key) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return null;
+                const item = JSON.parse(raw);
+                if (!item || Date.now() > item.expiry) return null;
+                return item.value;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // ---------- Fontes de dados (com fallback) ----------
+        // CoinGecko é a fonte principal. Se ela falhar (rate limit, instabilidade,
+        // bloqueio regional etc.) caímos pra CryptoCompare, que cobre os mesmos
+        // dados (preço USD/BRL, máx/mín 24h, variação 24h e histórico diário) e
+        // historicamente não tem bloqueio geográfico conhecido pra esses endpoints
+        // públicos — ao contrário da API da Binance, que é bloqueada nos EUA.
+        const DATA_SOURCES = [
+            {
+                name: 'CoinGecko',
+                async fetchCurrent() {
+                    const res = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false');
+                    if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
+                    const data = await res.json();
+                    const md = data.market_data;
+                    return {
+                        priceUSD: md.current_price.usd,
+                        priceBRL: md.current_price.brl,
+                        high24h: md.high_24h.usd,
+                        low24h: md.low_24h.usd,
+                        changePercent24h: md.price_change_percentage_24h,
+                    };
+                },
+                async fetchHistory() {
+                    const res = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=200&interval=daily');
+                    if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
+                    const data = await res.json();
+                    return { prices: data.prices.map(p => p[1]) };
+                },
+            },
+            {
+                name: 'CryptoCompare',
+                async fetchCurrent() {
+                    const res = await fetch('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USD,BRL');
+                    if (!res.ok) throw new Error(`CryptoCompare HTTP ${res.status}`);
+                    const data = await res.json();
+                    if (!data.RAW || !data.RAW.BTC) throw new Error('CryptoCompare: resposta inesperada');
+                    const usd = data.RAW.BTC.USD;
+                    const brl = data.RAW.BTC.BRL;
+                    return {
+                        priceUSD: usd.PRICE,
+                        priceBRL: brl.PRICE,
+                        high24h: usd.HIGH24HOUR,
+                        low24h: usd.LOW24HOUR,
+                        changePercent24h: usd.CHANGEPCT24HOUR,
+                    };
+                },
+                async fetchHistory() {
+                    const res = await fetch('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=200');
+                    if (!res.ok) throw new Error(`CryptoCompare HTTP ${res.status}`);
+                    const data = await res.json();
+                    if (data.Response === 'Error') throw new Error(data.Message || 'CryptoCompare: erro no histórico');
+                    return { prices: data.Data.Data.map(d => d.close) };
+                },
+            },
+        ];
+
+        // Tenta cada fonte na ordem; usa a primeira que responder com sucesso.
+        async function fetchWithFallback(method) {
+            let lastError = null;
+            for (const source of DATA_SOURCES) {
+                try {
+                    const result = await source[method]();
+                    return { ...result, source: source.name };
+                } catch (err) {
+                    console.error(`Fonte "${source.name}" falhou (${method}):`, err);
+                    lastError = err;
+                }
+            }
+            throw lastError || new Error('Todas as fontes de dados falharam');
+        }
+
+        function updateSourceIndicator(sourceName) {
+            const el = document.getElementById('info-source');
+            if (!el) return;
+            if (sourceName && sourceName !== DATA_SOURCES[0].name) {
+                el.textContent = `fonte: ${sourceName} (fallback)`;
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        // ---------- Histórico (MA200 + série p/ sparkline) ----------
+        async function getHistoricalData() {
+            const cached = getCache('btcHistory');
+            if (cached) return cached;
+
+            const { prices, source } = await fetchWithFallback('fetchHistory');
+            const ma200 = prices.reduce((acc, p) => acc + p, 0) / prices.length;
+
+            const result = { ma200, prices, source };
+            setCache('btcHistory', result, HISTORY_CACHE_HOURS);
+            return result;
+        }
+
+        // ---------- Alerta de preço (cruzamento de threshold) ----------
+        function checkPriceAlert(currentPrice) {
+            if (previousPrice !== null) {
+                const crossedDown = previousPrice > ALERT_THRESHOLD && currentPrice <= ALERT_THRESHOLD;
+                const crossedUp = previousPrice <= ALERT_THRESHOLD && currentPrice > ALERT_THRESHOLD;
+                if (crossedDown || crossedUp) {
+                    alertSound.play().catch(() => {}); // ignora bloqueio de autoplay
+                    triggerAlertVisual();
+                }
+            }
+            previousPrice = currentPrice;
+        }
+
+        function triggerAlertVisual() {
+            const el = document.getElementById('info-price');
+            el.classList.remove('alert-pulse');
+            void el.offsetWidth; // força reflow pra animação reiniciar
+            el.classList.add('alert-pulse');
+        }
+
+        function flashPrice(direction) {
+            const el = document.getElementById('info-price');
+            el.classList.remove('flash-up', 'flash-down');
+            void el.offsetWidth;
+            el.classList.add(direction === 'up' ? 'flash-up' : 'flash-down');
+        }
+
+        // ---------- Sparkline (histórico de 200 dias) ----------
+        function renderSparkline(prices) {
+            const svg = document.getElementById('sparkline');
+            if (!svg || !prices || prices.length === 0) return;
+
+            const w = 280, h = 50, pad = 3;
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            const range = (max - min) || 1;
+            const step = (w - pad * 2) / (prices.length - 1);
+
+            const points = prices.map((p, i) => {
+                const x = pad + i * step;
+                const y = h - pad - ((p - min) / range) * (h - pad * 2);
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+
+            svg.innerHTML = `<polyline points="${points}" fill="none" stroke="orange" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />`;
+        }
+
+        // ---------- Helpers de erro por campo ----------
+        function setField(id, text, extraClass) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('field-error');
+            el.textContent = text;
+            if (extraClass) el.classList.add(extraClass);
+        }
+
+        function setFieldError(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('field-error');
+            el.textContent = '—';
+        }
+
+        // ---------- Preço principal (1 fonte cobre USD, BRL, máx/mín e variação; com fallback automático) ----------
+        async function fetchAndUpdateTitle() {
+            let lastPriceUSD = null;
+            let success = false;
+
+            try {
+                const current = await fetchWithFallback('fetchCurrent');
+
+                lastPriceUSD = current.priceUSD;
+                const lastPriceBRL = current.priceBRL;
+                const priceChangePercent = current.changePercent24h;
+                const highPrice = current.high24h;
+                const lowPrice = current.low24h;
+
+                updateSourceIndicator(current.source);
+                checkPriceAlert(lastPriceUSD);
+
+                const formattedPriceUSD = lastPriceUSD.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+                const formattedPriceBRL = lastPriceBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const formattedPercent = priceChangePercent.toFixed(2) + '%';
+                const dollarExchangeRate = (lastPriceBRL / lastPriceUSD).toFixed(2);
+
+                // histórico (MA200 / sparkline) — não derruba o preço principal se falhar
+                let mayerMultiple = null;
+                try {
+                    const { ma200, prices } = await getHistoricalData();
+                    if (ma200) {
+                        mayerMultiple = lastPriceUSD / ma200;
+                        renderSparkline(prices);
+                    }
+                } catch (histErr) {
+                    console.error('Erro ao buscar histórico/MA200:', histErr);
+                    setFieldError('info-mayer');
+                }
+
+                // título da aba
+                let titleText = `${formattedPriceUSD} | ${formattedPercent}`;
+                if (mayerMultiple) titleText += ` | ${mayerMultiple.toFixed(2)}`;
+                document.title = titleText;
+
+                // flash visual quando o preço muda de fato
+                const priceEl = document.getElementById('info-price');
+                const prevText = priceEl.textContent;
+                if (prevText && prevText !== formattedPriceUSD) {
+                    flashPrice(formattedPriceUSD > prevText ? 'up' : 'down');
+                }
+
+                setField('info-price', formattedPriceUSD);
+                setField('info-brl', formattedPriceBRL);
+                setField('info-dollar', `R$ ${dollarExchangeRate}`);
+                setField('info-percent', formattedPercent);
+                document.getElementById('info-percent').classList.toggle('price-up', priceChangePercent > 0);
+                document.getElementById('info-percent').classList.toggle('price-down', priceChangePercent < 0);
+                if (mayerMultiple) setField('info-mayer', mayerMultiple.toFixed(2));
+                setField('highPrice', highPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' }));
+                setField('lowPrice', lowPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' }));
+
+                success = true;
+            } catch (error) {
+                console.error('Erro ao buscar dados da API:', error);
+                document.title = 'Erro ao buscar dados';
+                ['info-price', 'info-brl', 'info-dollar', 'info-percent', 'info-mayer', 'highPrice', 'lowPrice'].forEach(setFieldError);
+            }
+
+            // taxas de rede são independentes do preço — busca em paralelo, sem bloquear
+            fetchAndUpdateFees();
+
+            return success;
+        }
+
+        async function fetchAndUpdateFees() {
+            try {
+                const res = await fetch('https://mempool.space/api/v1/fees/recommended');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const fees = await res.json();
+
+                setField('fastestFee', `${fees.fastestFee} sat/vB`);
+                setField('halfHourFee', `${fees.halfHourFee} sat/vB`);
+                setField('hourFee', `${fees.hourFee} sat/vB`);
+                setField('economyFee', `${fees.economyFee} sat/vB`);
+                setField('minimumFee', `${fees.minimumFee} sat/vB`);
+
+                const avg = (fees.minimumFee + fees.economyFee + fees.hourFee + fees.halfHourFee + fees.fastestFee) / 5;
+                setField('mediumFee', `${avg.toFixed(1)} sat/vB`);
+            } catch (error) {
+                console.error('Erro ao buscar dados de taxas:', error);
+                ['fastestFee', 'halfHourFee', 'hourFee', 'economyFee', 'minimumFee', 'mediumFee'].forEach(setFieldError);
+            }
+        }
+
+        // ---------- Loop de atualização com backoff exponencial ----------
+        async function refreshLoop() {
+            const success = await fetchAndUpdateTitle();
+            currentInterval = success ? BASE_REFRESH : Math.min(currentInterval * 2, MAX_REFRESH);
+            setTimeout(refreshLoop, currentInterval);
+        }
+
+        // ---------- Relógio (UTC / Nova York / Hong Kong) ----------
+        // Independente da busca de preço: roda a cada segundo e nunca falha,
+        // já que não depende de nenhuma API — só do relógio do navegador.
+        // Intl.DateTimeFormat cuida do horário de verão de NY automaticamente.
+        function formatTimeInZone(date, timeZone) {
+            return date.toLocaleTimeString('pt-BR', {
+                timeZone,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+        }
+
+        function updateClocks() {
+            const now = new Date();
+            setField('time-utc', formatTimeInZone(now, 'UTC'));
+            setField('time-ny', formatTimeInZone(now, 'America/New_York'));
+            setField('time-hk', formatTimeInZone(now, 'Asia/Hong_Kong'));
+        }
+
+        window.onload = () => {
+            updateClocks();
+            setInterval(updateClocks, 1000);
+            refreshLoop();
+        };
+    </script>
+</head>
+<body>
+    <h1><i class="fa fa-bitcoin" style="font-size:48px;color:orange" title="Bitcoin é uma moeda digital descentralizada, baseada em tecnologia blockchain, que permite transações seguras e anônimas sem a necessidade de intermediários, como bancos ou governos."></i></h1>
+    <div id="info-price" class="info-large" title="Preço atual do Bitcoin em dólares americanos (USD)."></div>
+    <div id="info-brl" class="info-brlsmll" title="Preço atual do Bitcoin em reais (BRL)."></div>
+    <div id="info-dollar" class="info-dollar" title="Cotação teórica do dólar, calculada por BTC/BRL ÷ BTC/USD."></div>
+    <div id="info-percent" class="info-medium" title="Variação percentual do preço do Bitcoin nas últimas 24h."></div>
+    <div id="info-mayer" class="info-small" title="Mayer Multiple: razão entre o preço atual e a média móvel de 200 dias."></div>
+    <div class="sparkline-wrap">
+        <svg id="sparkline" width="280" height="50" viewBox="0 0 280 50" title="Histórico de preço dos últimos 200 dias"></svg>
+    </div>
+    <div id="info-time" class="info-smaller time-row" title="Horário em diferentes fusos: UTC, Nova York e Hong Kong.">
+        <span class="time-zone"><span class="time-zone-label">UTC</span><span id="time-utc"></span></span>
+        <span class="time-sep">·</span>
+        <span class="time-zone"><span class="time-zone-label">NY</span><span id="time-ny"></span></span>
+        <span class="time-sep">·</span>
+        <span class="time-zone"><span class="time-zone-label">HK</span><span id="time-hk"></span></span>
+    </div>
+    <div id="info-source" class="info-source" title="Fonte de dados em uso. Some quando a fonte principal (CoinGecko) está funcionando normalmente."></div>
+    <div class="stats-card">
+        <div class="stats-section">
+            <div class="stats-eyebrow">Variação 24h</div>
+            <div class="stats-row">
+                <div class="stat-tile">
+                    <div class="stat-label"><i class="fa fa-arrow-up"></i> Máxima</div>
+                    <div class="stat-value" id="highPrice"></div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label"><i class="fa fa-arrow-down"></i> Mínima</div>
+                    <div class="stat-value" id="lowPrice"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-divider"></div>
+
+        <div class="stats-section">
+            <div class="stats-eyebrow">Taxas da rede <span class="stats-unit">(sat/vB)</span></div>
+            <div class="stats-grid">
+                <div class="fee-tile">
+                    <div class="stat-label">Mínima</div>
+                    <div class="stat-value" id="minimumFee"></div>
+                </div>
+                <div class="fee-tile">
+                    <div class="stat-label">Econômica</div>
+                    <div class="stat-value" id="economyFee"></div>
+                </div>
+                <div class="fee-tile">
+                    <div class="stat-label">~1 hora</div>
+                    <div class="stat-value" id="hourFee"></div>
+                </div>
+                <div class="fee-tile">
+                    <div class="stat-label">~30 min</div>
+                    <div class="stat-value" id="halfHourFee"></div>
+                </div>
+                <div class="fee-tile fee-tile--accent">
+                    <div class="stat-label"><i class="fa fa-bolt"></i> Prioridade</div>
+                    <div class="stat-value" id="fastestFee"></div>
+                </div>
+            </div>
+            <div class="stats-average">
+                <span class="stat-label">Média</span>
+                <span class="stat-value stat-value--accent" id="mediumFee"></span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
