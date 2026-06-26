@@ -256,6 +256,80 @@
             animation: alertPulse 0.6s ease-in-out 3;
         }
 
+        /* ---------- Confete (celebração de novo ATH) ---------- */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 9998;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            top: -12px;
+            border-radius: 2px;
+            animation-name: confettiFall;
+            animation-timing-function: ease-in;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-10px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotate(var(--rot, 360deg));
+                opacity: 0;
+            }
+        }
+
+        /* ---------- Mensagem de novo ATH ---------- */
+        .ath-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 9999;
+            animation: athFade 6s ease-in-out forwards;
+        }
+
+        .ath-message {
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .ath-title {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--accent);
+            text-shadow: 0 0 30px rgba(247, 147, 26, 0.8), 0 0 70px rgba(247, 147, 26, 0.4);
+        }
+
+        .ath-subtitle {
+            margin-top: 10px;
+            font-size: 24px;
+            color: white;
+            font-variant-numeric: tabular-nums;
+        }
+
+        @keyframes athFade {
+            0% { opacity: 0; }
+            8% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
         /* Mobile */
         @media (max-width: 600px) {
             .info-large { font-size: 36px; }
@@ -265,6 +339,8 @@
             .stats-card { padding: 18px 16px; }
             .stat-value { font-size: 16px; }
             .fee-tile .stat-value { font-size: 13px; }
+            .ath-title { font-size: 28px; }
+            .ath-subtitle { font-size: 18px; }
         }
     </style>
     <script>
@@ -272,6 +348,8 @@
         const BASE_REFRESH = 10000;     // intervalo normal de atualização (ms)
         const MAX_REFRESH = 60000;      // teto do backoff em caso de erro (ms)
         const HISTORY_CACHE_HOURS = 12; // por quanto tempo cacheamos a MA200 / histórico de 200 dias
+        const ATH_WINDOW_HOURS = 24;    // só celebra se o ATH foi batido dentro dessa janela
+        const ATH_SEEN_KEY = 'lastSeenAthDate'; // guarda qual ATH (por data) já foi celebrado
 
         const alertSound = new Audio('https://www.myinstants.com/media/sounds/tindeck_1.mp3');
 
@@ -322,6 +400,10 @@
                         high24h: md.high_24h.usd,
                         low24h: md.low_24h.usd,
                         changePercent24h: md.price_change_percentage_24h,
+                        // ATH só vem da CoinGecko — a CryptoCompare (fallback) não fornece isso,
+                        // então a celebração de ATH simplesmente não dispara durante um fallback.
+                        athUSD: md.ath ? md.ath.usd : null,
+                        athDate: md.ath_date ? md.ath_date.usd : null,
                     };
                 },
                 async fetchHistory() {
@@ -424,6 +506,80 @@
             el.classList.add(direction === 'up' ? 'flash-up' : 'flash-down');
         }
 
+        // ---------- Novo ATH (all-time high) ----------
+        // Só celebra se o ATH retornado pela API foi batido dentro da janela de
+        // 24h E ainda não tiver sido mostrado pra esse ATH específico (guardado
+        // por data no localStorage). Isso cobre os dois casos pedidos:
+        // 1) primeiro acesso, com ATH recente ainda não visto;
+        // 2) ATH acontecendo com a tela já aberta (detectado no próximo refresh).
+        // Um F5 depois de já ter visto não repete a celebração, porque a data do
+        // ATH não muda até que um ATH novo de fato aconteça.
+        function checkForNewATH(athPriceUSD, athDateISO) {
+            if (!athDateISO || !athPriceUSD) return; // fonte de fallback não fornece ATH
+
+            const athDate = new Date(athDateISO);
+            if (isNaN(athDate.getTime())) return;
+
+            const hoursSinceAth = (Date.now() - athDate.getTime()) / (1000 * 60 * 60);
+            if (hoursSinceAth > ATH_WINDOW_HOURS) return; // ATH antigo, nada a celebrar
+
+            let lastSeen = null;
+            try {
+                lastSeen = localStorage.getItem(ATH_SEEN_KEY);
+            } catch (e) { /* localStorage indisponível — segue sem persistir */ }
+
+            if (lastSeen === athDateISO) return; // já celebramos esse ATH específico
+
+            try {
+                localStorage.setItem(ATH_SEEN_KEY, athDateISO);
+            } catch (e) { /* não bloqueia a celebração se não conseguir salvar */ }
+
+            celebrateNewATH(athPriceUSD);
+        }
+
+        function celebrateNewATH(athPriceUSD) {
+            spawnConfetti();
+            showAthMessage(athPriceUSD);
+        }
+
+        function spawnConfetti(count = 140) {
+            const container = document.createElement('div');
+            container.className = 'confetti-container';
+            document.body.appendChild(container);
+
+            const colors = ['#f7931a', '#ffb347', '#ff8c00', '#ffd580', '#e8750c'];
+
+            for (let i = 0; i < count; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                const size = 6 + Math.random() * 6;
+                piece.style.left = `${Math.random() * 100}vw`;
+                piece.style.width = `${size}px`;
+                piece.style.height = `${size}px`;
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDuration = `${2.5 + Math.random() * 2}s`;
+                piece.style.animationDelay = `${Math.random() * 0.6}s`;
+                piece.style.setProperty('--rot', `${Math.random() * 720 - 360}deg`);
+                container.appendChild(piece);
+            }
+
+            setTimeout(() => container.remove(), 5500);
+        }
+
+        function showAthMessage(athPriceUSD) {
+            const overlay = document.createElement('div');
+            overlay.className = 'ath-overlay';
+            const formattedAth = athPriceUSD.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+            overlay.innerHTML = `
+                <div class="ath-message">
+                    <div class="ath-title"><i class="fa fa-fire"></i> NEW ALL TIME HIGH <i class="fa fa-fire"></i></div>
+                    <div class="ath-subtitle">${formattedAth}</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 6000);
+        }
+
         // ---------- Sparkline (histórico de 200 dias) ----------
         function renderSparkline(prices) {
             const svg = document.getElementById('sparkline');
@@ -476,6 +632,7 @@
 
                 updateSourceIndicator(current.source);
                 checkPriceAlert(lastPriceUSD);
+                checkForNewATH(current.athUSD, current.athDate);
 
                 const formattedPriceUSD = lastPriceUSD.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
                 const formattedPriceBRL = lastPriceBRL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
